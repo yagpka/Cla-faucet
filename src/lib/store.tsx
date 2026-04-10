@@ -37,6 +37,8 @@ export interface GameState {
   lastResetDate: string;
   nextWeeklyReset: number;
   tgUser: { id: number; username?: string; first_name?: string } | null;
+  leaderboard: { telegram_id: number; username: string; balance_drp: number }[];
+  globalMetrics: { total_drp: number; total_withdrawals_usd: number };
 }
 
 const initialState: GameState = {
@@ -61,6 +63,8 @@ const initialState: GameState = {
   lastResetDate: '',
   nextWeeklyReset: 0,
   tgUser: null,
+  leaderboard: [],
+  globalMetrics: { total_drp: 0, total_withdrawals_usd: 0 },
 };
 
 interface GameContextType {
@@ -161,6 +165,29 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         } catch (e) {
           console.error("Supabase load error:", e);
         }
+      }
+
+      // Fetch Leaderboard
+      try {
+        const { data: lbData } = await supabase
+          .from('users')
+          .select('telegram_id, username, balance_drp')
+          .order('balance_drp', { ascending: false })
+          .limit(50);
+        if (lbData) parsed.leaderboard = lbData;
+      } catch (e) {
+        console.error("Failed to fetch leaderboard", e);
+      }
+
+      // Fetch Global Metrics
+      try {
+        const { data: gmData } = await supabase
+          .from('global_metrics')
+          .select('*')
+          .single();
+        if (gmData) parsed.globalMetrics = gmData;
+      } catch (e) {
+        console.error("Failed to fetch global metrics", e);
       }
 
       const today = getUTCDateString();

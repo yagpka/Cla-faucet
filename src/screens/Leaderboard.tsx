@@ -3,25 +3,26 @@ import { useGame } from '../lib/store';
 import { Trophy, Medal, Globe, ArrowDownToLine, Coins } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const MOCK_USERS = Array.from({ length: 19 }).map((_, i) => ({
-  id: `mock_${i}`,
-  username: `User${Math.floor(Math.random() * 900) + 100}***`,
-  score: Math.floor(Math.random() * 20000) + 5000,
-}));
-
 export const Leaderboard = () => {
   const { state } = useGame();
   const [activeTab, setActiveTab] = useState<'top' | 'global'>('top');
 
   const leaderboardData = useMemo(() => {
-    const allUsers = [
-      ...MOCK_USERS,
-      { id: 'me', username: 'You', score: state.weeklyEarnings, isMe: true }
-    ];
-    return allUsers.sort((a, b) => b.score - a.score);
-  }, [state.weeklyEarnings]);
+    let allUsers = [...state.leaderboard];
+    
+    // Ensure current user is in the list if they have a TG user
+    if (state.tgUser && !allUsers.find(u => u.telegram_id === state.tgUser!.id)) {
+      allUsers.push({
+        telegram_id: state.tgUser.id,
+        username: state.tgUser.username || 'You',
+        balance_drp: state.balance
+      });
+    }
 
-  const myRank = leaderboardData.findIndex(u => u.id === 'me') + 1;
+    return allUsers.sort((a, b) => b.balance_drp - a.balance_drp);
+  }, [state.leaderboard, state.balance, state.tgUser]);
+
+  const myRank = state.tgUser ? leaderboardData.findIndex(u => u.telegram_id === state.tgUser!.id) + 1 : 0;
   const top20 = leaderboardData.slice(0, 20);
 
   const getPrize = (rank: number) => {
@@ -52,7 +53,7 @@ export const Leaderboard = () => {
         </div>
 
         <h2 className="text-3xl font-bold text-slate-900 mb-2">Leaderboard</h2>
-        <p className="text-slate-500 text-sm mb-6">Resets every Monday at 00:00 UTC</p>
+        <p className="text-slate-500 text-sm mb-6">Real-time Global Rankings</p>
 
         {/* Tabs */}
         <div className="flex bg-slate-100 p-1 rounded-full mb-2">
@@ -80,13 +81,14 @@ export const Leaderboard = () => {
           top20.map((user, index) => {
             const rank = index + 1;
             const prize = getPrize(rank);
+            const isMe = state.tgUser && user.telegram_id === state.tgUser.id;
             
             return (
               <motion.div 
-                key={user.id} 
+                key={user.telegram_id} 
                 whileHover={{ scale: 1.02, rotateX: 2 }}
                 className={`flex items-center p-4 rounded-[24px] border preserve-3d transition-shadow hover:shadow-md ${
-                  user.isMe ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 shadow-sm'
+                  isMe ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200 shadow-sm'
                 }`}
               >
                 <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-slate-500 preserve-3d" style={{ transform: 'translateZ(10px)' }}>
@@ -97,8 +99,8 @@ export const Leaderboard = () => {
                 </div>
                 
                 <div className="ml-4 flex-1" style={{ transform: 'translateZ(5px)' }}>
-                  <div className={`font-bold text-lg ${user.isMe ? 'text-indigo-600' : 'text-slate-900'}`}>
-                    {user.username}
+                  <div className={`font-bold text-lg ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>
+                    {user.username || 'Anonymous'}
                   </div>
                   {prize && (
                     <div className="text-xs text-yellow-600 font-medium mt-0.5">Prize: {prize}</div>
@@ -106,7 +108,7 @@ export const Leaderboard = () => {
                 </div>
                 
                 <div className="font-bold text-slate-700" style={{ transform: 'translateZ(5px)' }}>
-                  {user.score.toLocaleString()}
+                  {Number(user.balance_drp).toLocaleString()}
                 </div>
               </motion.div>
             );
@@ -123,7 +125,9 @@ export const Leaderboard = () => {
                 </div>
                 <div>
                   <div className="text-slate-500 text-sm font-medium">Total DRP Claimed</div>
-                  <div className="text-2xl font-bold text-slate-900">1,500,000,000</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    {Number(state.globalMetrics.total_drp).toLocaleString()}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -138,7 +142,9 @@ export const Leaderboard = () => {
                 </div>
                 <div>
                   <div className="text-slate-500 text-sm font-medium">Withdrawals Processed</div>
-                  <div className="text-2xl font-bold text-slate-900">$1,250.00</div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    ${Number(state.globalMetrics.total_withdrawals_usd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -146,7 +152,7 @@ export const Leaderboard = () => {
         )}
       </div>
 
-      {activeTab === 'top' && (
+      {activeTab === 'top' && myRank > 0 && (
         <div className="absolute bottom-24 left-4 right-4 z-30 perspective-1000">
           <motion.div 
             whileHover={{ y: -5, rotateX: 5 }}
@@ -156,7 +162,7 @@ export const Leaderboard = () => {
               {myRank}
             </div>
             <div className="ml-4 flex-1 font-bold text-white text-lg" style={{ transform: 'translateZ(10px)' }}>You</div>
-            <div className="font-bold text-white" style={{ transform: 'translateZ(10px)' }}>{state.weeklyEarnings.toLocaleString()} DRP</div>
+            <div className="font-bold text-white" style={{ transform: 'translateZ(10px)' }}>{state.balance.toLocaleString()} DRP</div>
           </motion.div>
         </div>
       )}
