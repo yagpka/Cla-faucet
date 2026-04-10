@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { GameProvider } from './lib/store';
-import { BannerAd } from './components/BannerAd';
 import { Home } from './screens/Home';
 import { Faucet } from './screens/Faucet';
 import { WatchAds } from './screens/WatchAds';
@@ -55,8 +54,6 @@ function AppContent() {
       {/* Ambient Glows */}
       <div className="absolute top-0 left-0 w-full h-96 bg-indigo-500/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none" />
-      
-      <BannerAd />
       
       <main className="flex-1 overflow-hidden relative z-10 preserve-3d">
         <AnimatePresence mode="wait" custom={direction}>

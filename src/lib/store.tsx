@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from './supabase';
 
 export interface Withdrawal {
   id: string;
@@ -103,60 +104,120 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       tg.expand(); // Expand the mini app to full height
     }
 
-    const saved = localStorage.getItem('coindrop_state');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const today = getUTCDateString();
-        const now = Date.now();
+    const loadState = async () => {
+      let parsed = { ...initialState };
+      const saved = localStorage.getItem('coindrop_state');
+      if (saved) {
+        try {
+          parsed = { ...initialState, ...JSON.parse(saved) };
+        } catch (e) {
+          console.error("Failed to parse local state", e);
+        }
+      }
 
-        // Ensure new fields exist
-        if (!parsed.cryptoBalances) parsed.cryptoBalances = { TON: 0, SOL: 0, USDT: 0, BNB: 0 };
-        if (parsed.availableTaps === undefined) parsed.availableTaps = 0;
-        if (!parsed.selectedMiningCoin) parsed.selectedMiningCoin = 'TON';
-        if (parsed.referrals === undefined) parsed.referrals = 0;
+      // If we have a TG user, try to load from Supabase
+      if (tgUser) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('telegram_id', tgUser.id)
+            .single();
 
-        if (parsed.lastResetDate !== today) {
-          parsed.mineClicksToday = 0;
-          parsed.faucetClaimsToday = 0;
-          parsed.watchAdsProgress = Array(10).fill(0);
-          parsed.lastResetDate = today;
-          
-          if (parsed.lastFaucetClaimDate) {
-            const lastClaim = new Date(parsed.lastFaucetClaimDate);
-            const yesterday = new Date();
-            yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-            const yesterdayStr = `${yesterday.getUTCFullYear()}-${yesterday.getUTCMonth() + 1}-${yesterday.getUTCDate()}`;
-            
-            if (parsed.lastFaucetClaimDate !== yesterdayStr && parsed.lastFaucetClaimDate !== today) {
-              parsed.faucetStreak = 0;
+          if (data) {
+            parsed.balance = Number(data.balance_drp) || parsed.balance;
+            parsed.cryptoBalances.TON = Number(data.balance_ton) || parsed.cryptoBalances.TON;
+            parsed.cryptoBalances.SOL = Number(data.balance_sol) || parsed.cryptoBalances.SOL;
+            parsed.cryptoBalances.USDT = Number(data.balance_usdt) || parsed.cryptoBalances.USDT;
+            parsed.cryptoBalances.BNB = Number(data.balance_bnb) || parsed.cryptoBalances.BNB;
+            parsed.availableTaps = data.available_taps || parsed.availableTaps;
+            parsed.faucetStreak = data.faucet_streak || parsed.faucetStreak;
+            if (data.last_faucet_claim) {
+              const d = new Date(data.last_faucet_claim);
+              parsed.lastFaucetClaimDate = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
             }
+          } else if (error && error.code === 'PGRST116') {
+            // User not found, create them
+            await supabase.from('users').insert({
+              telegram_id: tgUser.id,
+              username: tgUser.username || '',
+              first_name: tgUser.first_name || '',
+              balance_drp: parsed.balance,
+              balance_ton: parsed.cryptoBalances.TON,
+              balance_sol: parsed.cryptoBalances.SOL,
+              balance_usdt: parsed.cryptoBalances.USDT,
+              balance_bnb: parsed.cryptoBalances.BNB,
+              available_taps: parsed.availableTaps,
+              faucet_streak: parsed.faucetStreak
+            });
+          }
+        } catch (e) {
+          console.error("Supabase load error:", e);
+        }
+      }
+
+      const today = getUTCDateString();
+      const now = Date.now();
+
+      if (parsed.lastResetDate !== today) {
+        parsed.mineClicksToday = 0;
+        parsed.faucetClaimsToday = 0;
+        parsed.watchAdsProgress = Array(10).fill(0);
+        parsed.lastResetDate = today;
+        
+        if (parsed.lastFaucetClaimDate) {
+          const lastClaim = new Date(parsed.lastFaucetClaimDate);
+          const yesterday = new Date();
+          yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+          const yesterdayStr = `${yesterday.getUTCFullYear()}-${yesterday.getUTCMonth() + 1}-${yesterday.getUTCDate()}`;
+          
+          if (parsed.lastFaucetClaimDate !== yesterdayStr && parsed.lastFaucetClaimDate !== today) {
+            parsed.faucetStreak = 0;
           }
         }
-
-        if (now > (parsed.nextWeeklyReset || 0)) {
-          parsed.weeklyEarnings = 0;
-          parsed.nextWeeklyReset = getNextMondayUTC();
-        }
-
-        setState({ ...initialState, ...parsed, tgUser });
-      } catch (e) {
-        console.error("Failed to parse state", e);
       }
-    } else {
-      setState({
-        ...initialState,
-        lastResetDate: getUTCDateString(),
-        nextWeeklyReset: getNextMondayUTC(),
-        tgUser,
-      });
-    }
-    setIsLoaded(true);
+
+      if (now > (parsed.nextWeeklyReset || 0)) {
+        parsed.weeklyEarnings = 0;
+        parsed.nextWeeklyReset = getNextMondayUTC();
+      }
+
+      setState({ ...parsed, tgUser });
+      setIsLoaded(true);
+    };
+
+    loadState();
   }, []);
 
+  // Sync state to Supabase (debounced)
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('coindrop_state', JSON.stringify(state));
+    if (!isLoaded) return;
+    
+    localStorage.setItem('coindrop_state', JSON.stringify(state));
+
+    if (state.tgUser) {
+      const syncDb = async () => {
+        try {
+          await supabase.from('users').upsert({
+            telegram_id: state.tgUser!.id,
+            username: state.tgUser!.username || '',
+            first_name: state.tgUser!.first_name || '',
+            balance_drp: state.balance,
+            balance_ton: state.cryptoBalances.TON,
+            balance_sol: state.cryptoBalances.SOL,
+            balance_usdt: state.cryptoBalances.USDT,
+            balance_bnb: state.cryptoBalances.BNB,
+            available_taps: state.availableTaps,
+            faucet_streak: state.faucetStreak,
+            last_faucet_claim: state.lastFaucetClaimDate ? new Date(state.lastFaucetClaimDate).toISOString() : null,
+          });
+        } catch (e) {
+          console.error('Failed to sync to Supabase', e);
+        }
+      };
+      
+      const timeoutId = setTimeout(syncDb, 2000);
+      return () => clearTimeout(timeoutId);
     }
   }, [state, isLoaded]);
 
@@ -182,6 +243,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         weeklyEarnings: prev.weeklyEarnings + reward,
         mineClicksToday: prev.mineClicksToday + 1,
       }));
+      
+      if (state.tgUser) {
+        supabase.from('ad_views').insert({ user_id: state.tgUser.id, type: 'mine_drp', reward_amount: reward }).then();
+      }
       return reward;
     }
 
@@ -207,6 +272,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
       availableTaps: prev.availableTaps + 100
     }));
+    if (state.tgUser) {
+      supabase.from('ad_views').insert({ user_id: state.tgUser.id, type: 'extra_taps', reward_amount: 100 }).then();
+    }
   };
 
   const setSelectedMiningCoin = (coin: 'DRP' | 'TON' | 'SOL' | 'USDT' | 'BNB') => {
@@ -246,6 +314,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       faucetStreak: newStreak,
       lastFaucetClaimDate: today,
     }));
+
+    if (state.tgUser) {
+      supabase.from('faucet_claims').insert({ user_id: state.tgUser.id, reward_amount: reward, streak_day: newStreak }).then();
+    }
   };
 
   const claimWatchAd = (index: number, reward: number) => {
@@ -259,6 +331,9 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         watchAdsProgress: newProgress,
       };
     });
+    if (state.tgUser) {
+      supabase.from('ad_views').insert({ user_id: state.tgUser.id, type: `ad_type_${index + 1}` as any, reward_amount: reward }).then();
+    }
   };
 
   const updateTask = (taskId: keyof GameState['tasks'], status: any) => {
@@ -274,6 +349,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
       return newState;
     });
+
+    if (state.tgUser) {
+      supabase.from('user_tasks').upsert({ user_id: state.tgUser.id, task_id: taskId, status }).then();
+    }
   };
 
   const convertDrpToCrypto = (amount: number, coin: string, rate: number) => {
@@ -287,12 +366,23 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         [coin as keyof typeof prev.cryptoBalances]: prev.cryptoBalances[coin as keyof typeof prev.cryptoBalances] + cryptoAmount
       }
     }));
+
+    if (state.tgUser) {
+      supabase.from('conversions').insert({
+        user_id: state.tgUser.id,
+        from_coin: 'DRP',
+        to_coin: coin,
+        amount_in: amount,
+        amount_out: cryptoAmount,
+        conversion_rate: rate
+      }).then();
+    }
+
     return true;
   };
 
   const requestWithdrawal = (cryptoAmount: number, coin: string, address: string, usdValue: number) => {
     if (state.cryptoBalances[coin as keyof typeof state.cryptoBalances] < cryptoAmount) return false;
-    // We removed the $2.00 USD check here because Wallet.tsx now checks per-coin minimums.
 
     const newWithdrawal: Withdrawal = {
       id: Math.random().toString(36).substring(2, 9),
@@ -310,6 +400,18 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       },
       withdrawals: [newWithdrawal, ...prev.withdrawals],
     }));
+
+    if (state.tgUser) {
+      supabase.from('withdrawals').insert({
+        user_id: state.tgUser.id,
+        coin,
+        amount: cryptoAmount,
+        usd_value: usdValue,
+        wallet_address: address,
+        status: 'pending'
+      }).then();
+    }
+
     return true;
   };
 
