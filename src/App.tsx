@@ -50,7 +50,7 @@ function AppContent() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden max-w-md mx-auto relative shadow-2xl perspective-1000">
+    <div className="flex flex-col h-full bg-slate-50 text-slate-900 font-sans overflow-hidden max-w-md mx-auto relative shadow-2xl perspective-1000">
       {/* Ambient Glows */}
       <div className="absolute top-0 left-0 w-full h-96 bg-indigo-500/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none" />

@@ -43,7 +43,7 @@ export const Home = () => {
 
     if (state.selectedMiningCoin === 'DRP') {
       // DRP mining requires watching an ad and doesn't consume taps
-      showAd(() => {
+      showAd('int-27386', () => {
         executeMine(clientX, clientY, rect);
       });
     } else {
@@ -54,7 +54,7 @@ export const Home = () => {
   };
 
   const handleWatchAdForTaps = () => {
-    showAd(() => {
+    showAd('int-27388', () => {
       watchAdForTaps();
     });
   };

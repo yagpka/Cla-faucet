@@ -27,7 +27,7 @@ export const Faucet = () => {
 
   const handleClaim = () => {
     if (timeLeft > 0 || state.faucetClaimsToday >= 96) return;
-    showAd(() => {
+    showAd('int-27387', () => {
       claimFaucet();
     });
   };

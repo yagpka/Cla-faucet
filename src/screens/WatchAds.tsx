@@ -21,7 +21,11 @@ export const WatchAds = () => {
 
   const handleWatch = (index: number, reward: number) => {
     if (state.watchAdsProgress[index] >= AD_TYPES[index].max) return;
-    showAd(() => {
+    
+    const adIds = ['int-27388', 'int-27389', 'int-27390', 'int-27391', 'int-27392'];
+    const adId = adIds[index % 5];
+    
+    showAd(adId, () => {
       claimWatchAd(index, reward);
     });
   };

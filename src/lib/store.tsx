@@ -71,7 +71,7 @@ const initialState: GameState = {
 
 interface GameContextType {
   state: GameState;
-  showAd: (onSuccess: () => void) => void;
+  showAd: (adId: string, onSuccess: () => void, onError?: () => void) => void;
   claimMine: () => number;
   watchAdForTaps: () => void;
   setSelectedMiningCoin: (coin: 'DRP' | 'TON' | 'SOL' | 'USDT' | 'BNB') => void;
@@ -337,8 +337,19 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [state, isLoaded]);
 
-  const showAd = (onSuccess: () => void) => {
-    setAdCallback(() => onSuccess);
+  const showAd = (adId: string, onSuccess: () => void, onError?: () => void) => {
+    if ((window as any).Adsgram) {
+      const AdController = (window as any).Adsgram.init({ blockId: adId });
+      AdController.show().then(() => {
+        onSuccess();
+      }).catch((err: any) => {
+        console.error("Adsgram error:", err);
+        if (onError) onError();
+      });
+    } else {
+      // Fallback to simulate ad if Adsgram is not loaded (e.g. in browser)
+      setAdCallback(() => onSuccess);
+    }
   };
 
   const closeAd = () => {
