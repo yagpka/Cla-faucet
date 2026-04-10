@@ -74,12 +74,12 @@ export const Home = () => {
 
       {/* Coin Selector */}
       <div className="bg-white p-2 rounded-[24px] border border-slate-200 shadow-sm mb-6 relative z-20">
-        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
           {coins.map(coin => (
             <button
               key={coin}
               onClick={() => setSelectedMiningCoin(coin as any)}
-              className={`flex-1 min-w-[70px] py-3 rounded-[16px] font-bold text-sm transition-all whitespace-nowrap ${
+              className={`flex-1 min-w-[60px] py-2.5 rounded-[16px] font-bold text-sm transition-all whitespace-nowrap ${
                 state.selectedMiningCoin === coin 
                   ? (coin === 'DRP' ? 'bg-yellow-500 text-white shadow-md' : 'bg-indigo-600 text-white shadow-md')
                   : 'bg-transparent text-slate-500 hover:bg-slate-50'
