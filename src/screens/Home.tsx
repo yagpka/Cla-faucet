@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../lib/store';
+import { sounds } from '../lib/sounds';
 import { Flame, Coins, PlaySquare, Zap, Pickaxe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -27,6 +28,11 @@ export const Home = () => {
     const y = clientY - rect.top;
 
     const reward = claimMine();
+    if (state.selectedMiningCoin === 'DRP') {
+      sounds.playCoin();
+    } else {
+      sounds.playTap();
+    }
     const id = Date.now();
     setClicks(prev => [...prev, { id, x, y, reward, coin: state.selectedMiningCoin }]);
     setIsMining(true);
@@ -42,6 +48,7 @@ export const Home = () => {
     const clientY = e.clientY;
 
     if (state.selectedMiningCoin === 'DRP') {
+      sounds.playClick();
       // DRP mining requires watching an ad and doesn't consume taps
       showAd('int-27386', () => {
         executeMine(clientX, clientY, rect);
@@ -54,7 +61,9 @@ export const Home = () => {
   };
 
   const handleWatchAdForTaps = () => {
+    sounds.playClick();
     showAd('int-27388', () => {
+      sounds.playSuccess();
       watchAdForTaps();
     });
   };
@@ -192,7 +201,7 @@ export const Home = () => {
               transition={{ duration: 1, ease: "easeOut" }}
               className={`absolute text-xl font-black pointer-events-none drop-shadow-[0_5px_10px_rgba(0,0,0,0.1)] flex items-center gap-1 z-50 whitespace-nowrap ${click.coin === 'DRP' ? 'text-yellow-500' : 'text-indigo-600'}`}
             >
-              +{click.coin === 'DRP' ? click.reward : click.reward.toFixed(7)} {click.coin}
+              +{click.coin === 'DRP' ? click.reward : click.reward.toFixed(8)} {click.coin}
             </motion.div>
           ))}
         </AnimatePresence>

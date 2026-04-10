@@ -379,7 +379,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
     if (state.availableTaps <= 0) return 0;
     
-    if (state.selectedMiningCoin === 'BNB') reward = 0.0000001;
+    if (state.selectedMiningCoin === 'BNB') reward = 0.00000001;
     else reward = 0.000001;
 
     setState(prev => ({

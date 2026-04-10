@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../lib/store';
+import { sounds } from '../lib/sounds';
 import { MessageCircle, Twitter, Youtube, Check, Users, Copy, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -13,15 +14,18 @@ export const Tasks = () => {
     : `https://t.me/Cla_faucet_bot/earn?startapp=ref_test123`;
 
   const handleTgClick = () => {
+    sounds.playClick();
     if (state.tasks.tg === 'pending') {
       window.open('https://t.me/Cla_faucet', '_blank');
       updateTask('tg', 'claim');
     } else if (state.tasks.tg === 'claim') {
+      sounds.playSuccess();
       updateTask('tg', 'done');
     }
   };
 
   const handleTwitterClick = () => {
+    sounds.playClick();
     if (state.tasks.twitter === 'pending') {
       window.open('https://x.com/yashikact', '_blank');
       updateTask('twitter', 'watching');
@@ -29,11 +33,13 @@ export const Tasks = () => {
         updateTask('twitter', 'claim');
       }, 30000);
     } else if (state.tasks.twitter === 'claim') {
+      sounds.playSuccess();
       updateTask('twitter', 'done');
     }
   };
 
   const handleYtClick = () => {
+    sounds.playClick();
     if (state.tasks.yt === 'pending') {
       window.open('https://www.youtube.com/@hub_of_growth', '_blank');
       updateTask('yt', 'watching');
@@ -41,11 +47,13 @@ export const Tasks = () => {
         updateTask('yt', 'claim');
       }, 30000);
     } else if (state.tasks.yt === 'claim') {
+      sounds.playSuccess();
       updateTask('yt', 'done');
     }
   };
 
   const copyReferralLink = () => {
+    sounds.playClick();
     navigator.clipboard.writeText(refLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

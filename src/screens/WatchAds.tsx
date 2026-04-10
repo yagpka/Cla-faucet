@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGame } from '../lib/store';
+import { sounds } from '../lib/sounds';
 import { PlaySquare, Coins, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -22,10 +23,12 @@ export const WatchAds = () => {
   const handleWatch = (index: number, reward: number) => {
     if (state.watchAdsProgress[index] >= AD_TYPES[index].max) return;
     
+    sounds.playClick();
     const adIds = ['int-27388', 'int-27389', 'int-27390', 'int-27391', 'int-27392'];
     const adId = adIds[index % 5];
     
     showAd(adId, () => {
+      sounds.playSuccess();
       claimWatchAd(index, reward);
     });
   };

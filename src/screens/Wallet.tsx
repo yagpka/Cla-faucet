@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../lib/store';
+import { sounds } from '../lib/sounds';
 import { Wallet as WalletIcon, ArrowRightLeft, History, Send } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -45,6 +46,7 @@ export const Wallet = () => {
   const handleConvert = (e: React.FormEvent) => {
     e.preventDefault();
     setConvertError('');
+    sounds.playClick();
 
     if (parsedConvertAmount < 10000) {
       setConvertError('Minimum conversion is 10,000 DRP');
@@ -57,11 +59,13 @@ export const Wallet = () => {
 
     const success = convertDrpToCrypto(parsedConvertAmount, convertCoin, selectedConvertCoin.rate);
     if (success) {
+      sounds.playSuccess();
       setConvertAmount('');
     }
   };
 
   const handleCoinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    sounds.playClick();
     const newCoin = e.target.value;
     setWithdrawCoin(newCoin);
     setWithdrawAmount(WITHDRAWAL_OPTIONS[newCoin][0]);
@@ -70,6 +74,7 @@ export const Wallet = () => {
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
     setWithdrawError('');
+    sounds.playClick();
 
     if (withdrawAmount > state.cryptoBalances[withdrawCoin as keyof typeof state.cryptoBalances]) {
       setWithdrawError('Insufficient crypto balance');
@@ -82,6 +87,7 @@ export const Wallet = () => {
 
     const success = requestWithdrawal(withdrawAmount, withdrawCoin, withdrawAddress, parseFloat(withdrawUsdValue));
     if (success) {
+      sounds.playSuccess();
       setWithdrawAddress('');
     }
   };
@@ -204,7 +210,7 @@ export const Wallet = () => {
               className="w-full bg-slate-50 border border-slate-200 rounded-full px-6 py-4 text-slate-900 outline-none focus:border-indigo-500 appearance-none transition-colors focus:shadow-[0_0_15px_rgba(79,70,229,0.1)]"
             >
               {COINS.map(c => (
-                <option key={c.id} value={c.id}>{c.name} (Bal: {state.cryptoBalances[c.id as keyof typeof state.cryptoBalances].toFixed(4)})</option>
+                <option key={c.id} value={c.id}>{c.name} (Bal: {state.cryptoBalances[c.id as keyof typeof state.cryptoBalances].toFixed(8)})</option>
               ))}
             </select>
           </div>
@@ -282,7 +288,7 @@ export const Wallet = () => {
                 className="bg-white border border-slate-200 p-5 rounded-[24px] flex justify-between items-center shadow-sm"
               >
                 <div>
-                  <div className="font-bold text-slate-900 text-lg">{w.amount.toFixed(6)} {w.coin}</div>
+                  <div className="font-bold text-slate-900 text-lg">{w.amount.toFixed(8)} {w.coin}</div>
                   <div className="text-sm text-slate-500 mt-1">{new Date(w.date).toLocaleDateString()}</div>
                 </div>
                 <div className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider ${

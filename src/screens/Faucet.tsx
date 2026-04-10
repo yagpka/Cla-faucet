@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../lib/store';
+import { sounds } from '../lib/sounds';
 import { Droplets, Flame, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -27,7 +28,9 @@ export const Faucet = () => {
 
   const handleClaim = () => {
     if (timeLeft > 0 || state.faucetClaimsToday >= 96) return;
+    sounds.playClick();
     showAd('int-27387', () => {
+      sounds.playSuccess();
       claimFaucet();
     });
   };

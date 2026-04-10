@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GameProvider } from './lib/store';
+import { sounds } from './lib/sounds';
 import { Home } from './screens/Home';
 import { Faucet } from './screens/Faucet';
 import { WatchAds } from './screens/WatchAds';
@@ -43,6 +44,7 @@ function AppContent() {
   const [direction, setDirection] = useState(0);
 
   const handleTabChange = (newTabId: string) => {
+    sounds.playClick();
     const currentIndex = TABS.findIndex(t => t.id === activeTab);
     const newIndex = TABS.findIndex(t => t.id === newTabId);
     setDirection(newIndex > currentIndex ? 1 : -1);
