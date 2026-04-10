@@ -18,7 +18,7 @@ export interface GameState {
     BNB: number;
   };
   availableTaps: number;
-  selectedMiningCoin: 'TON' | 'SOL' | 'USDT' | 'BNB';
+  selectedMiningCoin: 'DRP' | 'TON' | 'SOL' | 'USDT' | 'BNB';
   referrals: number;
   weeklyEarnings: number;
   mineClicksToday: number;
@@ -35,6 +35,7 @@ export interface GameState {
   withdrawals: Withdrawal[];
   lastResetDate: string;
   nextWeeklyReset: number;
+  tgUser: { id: number; username?: string; first_name?: string } | null;
 }
 
 const initialState: GameState = {
@@ -58,6 +59,7 @@ const initialState: GameState = {
   withdrawals: [],
   lastResetDate: '',
   nextWeeklyReset: 0,
+  tgUser: null,
 };
 
 interface GameContextType {
@@ -65,7 +67,7 @@ interface GameContextType {
   showAd: (onSuccess: () => void) => void;
   claimMine: () => number;
   watchAdForTaps: () => void;
-  setSelectedMiningCoin: (coin: 'TON' | 'SOL' | 'USDT' | 'BNB') => void;
+  setSelectedMiningCoin: (coin: 'DRP' | 'TON' | 'SOL' | 'USDT' | 'BNB') => void;
   claimFaucet: () => void;
   claimWatchAd: (index: number, reward: number) => void;
   updateTask: (taskId: keyof GameState['tasks'], status: any) => void;
@@ -93,6 +95,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [adCallback, setAdCallback] = useState<(() => void) | null>(null);
 
   useEffect(() => {
+    // Initialize Telegram Web App
+    const tg = (window as any).Telegram?.WebApp;
+    let tgUser = null;
+    if (tg && tg.initDataUnsafe?.user) {
+      tgUser = tg.initDataUnsafe.user;
+      tg.expand(); // Expand the mini app to full height
+    }
+
     const saved = localStorage.getItem('coindrop_state');
     if (saved) {
       try {
@@ -129,7 +139,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
           parsed.nextWeeklyReset = getNextMondayUTC();
         }
 
-        setState({ ...initialState, ...parsed });
+        setState({ ...initialState, ...parsed, tgUser });
       } catch (e) {
         console.error("Failed to parse state", e);
       }
@@ -138,6 +148,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         ...initialState,
         lastResetDate: getUTCDateString(),
         nextWeeklyReset: getNextMondayUTC(),
+        tgUser,
       });
     }
     setIsLoaded(true);
@@ -161,9 +172,21 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const claimMine = () => {
+    let reward = 0;
+    
+    if (state.selectedMiningCoin === 'DRP') {
+      reward = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
+      setState(prev => ({
+        ...prev,
+        balance: prev.balance + reward,
+        weeklyEarnings: prev.weeklyEarnings + reward,
+        mineClicksToday: prev.mineClicksToday + 1,
+      }));
+      return reward;
+    }
+
     if (state.availableTaps <= 0) return 0;
     
-    let reward = 0;
     if (state.selectedMiningCoin === 'BNB') reward = 0.0000001;
     else reward = 0.000001;
 
@@ -172,7 +195,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       availableTaps: prev.availableTaps - 1,
       cryptoBalances: {
         ...prev.cryptoBalances,
-        [prev.selectedMiningCoin]: prev.cryptoBalances[prev.selectedMiningCoin] + reward
+        [prev.selectedMiningCoin]: prev.cryptoBalances[prev.selectedMiningCoin as keyof typeof prev.cryptoBalances] + reward
       },
       mineClicksToday: prev.mineClicksToday + 1,
     }));
@@ -186,7 +209,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
-  const setSelectedMiningCoin = (coin: 'TON' | 'SOL' | 'USDT' | 'BNB') => {
+  const setSelectedMiningCoin = (coin: 'DRP' | 'TON' | 'SOL' | 'USDT' | 'BNB') => {
     setState(prev => ({ ...prev, selectedMiningCoin: coin }));
   };
 
@@ -269,7 +292,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const requestWithdrawal = (cryptoAmount: number, coin: string, address: string, usdValue: number) => {
     if (state.cryptoBalances[coin as keyof typeof state.cryptoBalances] < cryptoAmount) return false;
-    if (usdValue < 2.0) return false; // 20k DRP = $2.00
+    // We removed the $2.00 USD check here because Wallet.tsx now checks per-coin minimums.
 
     const newWithdrawal: Withdrawal = {
       id: Math.random().toString(36).substring(2, 9),

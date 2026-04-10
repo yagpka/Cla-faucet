@@ -14,6 +14,10 @@ export const Tasks = () => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'referrals'>('tasks');
 
+  const refLink = state.tgUser 
+    ? `https://t.me/Cla_faucet_bot/earn?startapp=ref_${state.tgUser.id}`
+    : `https://t.me/Cla_faucet_bot/earn?startapp=ref_test123`;
+
   const handleTgClick = () => {
     if (state.tasks.tg === 'pending') {
       window.open('https://t.me/Cla_faucet', '_blank');
@@ -48,7 +52,7 @@ export const Tasks = () => {
   };
 
   const copyReferralLink = () => {
-    navigator.clipboard.writeText('https://t.me/Cla_faucet?start=ref123');
+    navigator.clipboard.writeText(refLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -166,7 +170,7 @@ export const Tasks = () => {
 
             <div className="bg-white/10 rounded-xl p-4 flex items-center justify-between border border-white/20 relative z-10" style={{ transform: 'translateZ(5px)' }}>
               <div className="text-white font-mono text-sm truncate mr-4">
-                https://t.me/Cla_faucet?start=ref123
+                {refLink}
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -176,6 +180,11 @@ export const Tasks = () => {
                 {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
               </motion.button>
             </div>
+            {!state.tgUser && (
+              <div className="mt-4 text-xs text-indigo-200 text-center bg-black/20 p-2 rounded-lg">
+                Testing Mode: Open in Telegram to see your real referral link.
+              </div>
+            )}
           </motion.div>
 
           <div>

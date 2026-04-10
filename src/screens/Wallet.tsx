@@ -10,6 +10,13 @@ const COINS = [
   { id: 'BNB', name: 'BNB (BEP-20)', rate: 0.0033, minWithdrawal: 0.005 },
 ];
 
+const WITHDRAWAL_OPTIONS: Record<string, number[]> = {
+  'TON': [2, 5, 10, 20],
+  'USDT': [2, 5, 10, 50],
+  'SOL': [0.02, 0.05, 0.1, 0.5],
+  'BNB': [0.005, 0.01, 0.05, 0.1],
+};
+
 export const Wallet = () => {
   const { state, requestWithdrawal, convertDrpToCrypto } = useGame();
   
@@ -19,9 +26,9 @@ export const Wallet = () => {
   const [convertError, setConvertError] = useState('');
 
   // Withdrawal state
-  const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawCoin, setWithdrawCoin] = useState(COINS[0].id);
+  const [withdrawAmount, setWithdrawAmount] = useState(WITHDRAWAL_OPTIONS[COINS[0].id][0]);
   const [withdrawError, setWithdrawError] = useState('');
 
   const usdValue = (state.balance * 0.0001).toFixed(4);
@@ -32,9 +39,8 @@ export const Wallet = () => {
   const expectedCrypto = (parsedConvertAmount * 0.0001 * selectedConvertCoin.rate).toFixed(8);
 
   // Withdrawal calculations
-  const parsedWithdrawAmount = parseFloat(withdrawAmount) || 0;
   const selectedWithdrawCoin = COINS.find(c => c.id === withdrawCoin)!;
-  const withdrawUsdValue = (parsedWithdrawAmount / selectedWithdrawCoin.rate).toFixed(4);
+  const withdrawUsdValue = (withdrawAmount / selectedWithdrawCoin.rate).toFixed(4);
 
   const handleConvert = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,15 +61,17 @@ export const Wallet = () => {
     }
   };
 
+  const handleCoinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newCoin = e.target.value;
+    setWithdrawCoin(newCoin);
+    setWithdrawAmount(WITHDRAWAL_OPTIONS[newCoin][0]);
+  };
+
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
     setWithdrawError('');
 
-    if (parsedWithdrawAmount < selectedWithdrawCoin.minWithdrawal) {
-      setWithdrawError(`Minimum withdrawal is ${selectedWithdrawCoin.minWithdrawal} ${withdrawCoin}`);
-      return;
-    }
-    if (parsedWithdrawAmount > state.cryptoBalances[withdrawCoin as keyof typeof state.cryptoBalances]) {
+    if (withdrawAmount > state.cryptoBalances[withdrawCoin as keyof typeof state.cryptoBalances]) {
       setWithdrawError('Insufficient crypto balance');
       return;
     }
@@ -72,9 +80,8 @@ export const Wallet = () => {
       return;
     }
 
-    const success = requestWithdrawal(parsedWithdrawAmount, withdrawCoin, withdrawAddress, parseFloat(withdrawUsdValue));
+    const success = requestWithdrawal(withdrawAmount, withdrawCoin, withdrawAddress, parseFloat(withdrawUsdValue));
     if (success) {
-      setWithdrawAmount('');
       setWithdrawAddress('');
     }
   };
@@ -193,7 +200,7 @@ export const Wallet = () => {
             <label className="block text-sm font-medium text-slate-500 mb-2 ml-1">Select Crypto</label>
             <select 
               value={withdrawCoin}
-              onChange={(e) => setWithdrawCoin(e.target.value)}
+              onChange={handleCoinChange}
               className="w-full bg-slate-50 border border-slate-200 rounded-full px-6 py-4 text-slate-900 outline-none focus:border-indigo-500 appearance-none transition-colors focus:shadow-[0_0_15px_rgba(79,70,229,0.1)]"
             >
               {COINS.map(c => (
@@ -204,14 +211,22 @@ export const Wallet = () => {
 
           <div>
             <label className="block text-sm font-medium text-slate-500 mb-2 ml-1">Amount</label>
-            <input 
-              type="number" 
-              step="0.00000001"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              placeholder={`Min value ${selectedWithdrawCoin.minWithdrawal} ${withdrawCoin}`}
-              className="w-full bg-slate-50 border border-slate-200 rounded-full px-6 py-4 text-slate-900 outline-none focus:border-indigo-500 transition-colors focus:shadow-[0_0_15px_rgba(79,70,229,0.1)]"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              {WITHDRAWAL_OPTIONS[withdrawCoin].map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setWithdrawAmount(amt)}
+                  className={`py-3 rounded-xl font-bold text-sm transition-all border ${
+                    withdrawAmount === amt 
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {amt} {withdrawCoin}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -225,7 +240,7 @@ export const Wallet = () => {
             />
           </div>
 
-          {parsedWithdrawAmount > 0 && (
+          {withdrawAmount > 0 && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
