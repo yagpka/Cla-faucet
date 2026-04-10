@@ -102,6 +102,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     if (tg && tg.initDataUnsafe?.user) {
       tgUser = tg.initDataUnsafe.user;
       tg.expand(); // Expand the mini app to full height
+    } else {
+      // Fallback for browser testing
+      tgUser = {
+        id: 123456789,
+        username: 'demo_browser_user',
+        first_name: 'Demo User'
+      };
     }
 
     const loadState = async () => {
