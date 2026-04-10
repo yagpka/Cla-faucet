@@ -39,6 +39,7 @@ export interface GameState {
   tgUser: { id: number; username?: string; first_name?: string } | null;
   leaderboard: { telegram_id: number; username: string; balance_drp: number }[];
   globalMetrics: { total_drp: number; total_withdrawals_usd: number };
+  referredUsers: { id: string; username: string; reward: number; date: string }[];
 }
 
 const initialState: GameState = {
@@ -65,6 +66,7 @@ const initialState: GameState = {
   tgUser: null,
   leaderboard: [],
   globalMetrics: { total_drp: 0, total_withdrawals_usd: 0 },
+  referredUsers: [],
 };
 
 interface GameContextType {
@@ -108,9 +110,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       tg.expand(); // Expand the mini app to full height
     } else {
       // Fallback for browser testing
+      let demoId = localStorage.getItem('demo_tg_id');
+      if (!demoId) {
+        demoId = Math.floor(Math.random() * 1000000000).toString();
+        localStorage.setItem('demo_tg_id', demoId);
+      }
       tgUser = {
-        id: 123456789,
-        username: 'demo_browser_user',
+        id: parseInt(demoId, 10),
+        username: 'demo_user_' + demoId.substring(0, 4),
         first_name: 'Demo User'
       };
     }
@@ -161,9 +168,84 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
               available_taps: parsed.availableTaps,
               faucet_streak: parsed.faucetStreak
             });
+
+            // Handle Referral if start_param exists
+            let startParam = tg?.initDataUnsafe?.start_param;
+            if (!startParam) {
+              const urlParams = new URLSearchParams(window.location.search);
+              startParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
+            }
+
+            if (startParam && startParam.startsWith('ref_')) {
+              const referrerId = parseInt(startParam.replace('ref_', ''), 10);
+              if (!isNaN(referrerId) && referrerId !== tgUser.id) {
+                
+                // 1. Check if referrer exists
+                const { data: referrerData } = await supabase
+                  .from('users')
+                  .select('balance_drp')
+                  .eq('telegram_id', referrerId)
+                  .single();
+                
+                if (referrerData) {
+                  // 2. Insert referral record
+                  const { error: refError } = await supabase.from('referrals').insert({
+                    referrer_id: referrerId,
+                    referred_id: tgUser.id,
+                    reward_amount: 100
+                  });
+
+                  if (!refError) {
+                    // 3. Give reward to referrer only if insert succeeded
+                    await supabase.from('users').update({
+                      balance_drp: Number(referrerData.balance_drp) + 100
+                    }).eq('telegram_id', referrerId);
+                  } else {
+                    console.error("Referral insert failed:", refError);
+                  }
+                }
+              }
+            }
           }
         } catch (e) {
           console.error("Supabase load error:", e);
+        }
+
+        // Fetch Referrals for this user
+        try {
+          const { data: refData } = await supabase
+            .from('referrals')
+            .select('id, reward_amount, created_at, referred_id')
+            .eq('referrer_id', tgUser.id)
+            .order('created_at', { ascending: false });
+
+          if (refData && refData.length > 0) {
+            parsed.referrals = refData.length;
+            
+            // Fetch usernames for referred users
+            const referredIds = refData.map(r => r.referred_id);
+            const { data: usersData } = await supabase
+              .from('users')
+              .select('telegram_id, username, first_name')
+              .in('telegram_id', referredIds);
+
+            const userMap = new Map();
+            if (usersData) {
+              usersData.forEach(u => userMap.set(u.telegram_id, u.username || u.first_name || 'Anonymous'));
+            }
+
+            parsed.referredUsers = refData.map(r => ({
+              id: r.id,
+              username: userMap.get(r.referred_id) || 'Anonymous',
+              reward: Number(r.reward_amount),
+              date: new Date(r.created_at).toISOString().split('T')[0]
+            }));
+          } else {
+            parsed.referrals = 0;
+            parsed.referredUsers = [];
+          }
+        } catch (e) {
+          console.error("Failed to fetch referrals", e);
         }
       }
 

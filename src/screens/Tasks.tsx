@@ -3,12 +3,6 @@ import { useGame } from '../lib/store';
 import { MessageCircle, Twitter, Youtube, Check, Users, Copy, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const MOCK_REFERRALS = [
-  { id: 1, username: 'CryptoKing99', reward: 100, date: '2026-04-08' },
-  { id: 2, username: 'MoonWalker', reward: 100, date: '2026-04-07' },
-  { id: 3, username: 'DogeLover', reward: 100, date: '2026-04-05' },
-];
-
 export const Tasks = () => {
   const { state, updateTask } = useGame();
   const [copied, setCopied] = useState(false);
@@ -193,26 +187,32 @@ export const Tasks = () => {
             </h3>
             
             <div className="space-y-3">
-              {MOCK_REFERRALS.map(ref => (
-                <motion.div 
-                  whileHover={{ x: 5 }}
-                  key={ref.id} 
-                  className="bg-white border border-slate-200 p-4 rounded-[20px] flex justify-between items-center shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 font-bold">
-                      {ref.username.charAt(0).toUpperCase()}
+              {state.referredUsers.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 bg-white border border-slate-200 rounded-[20px]">
+                  You haven't referred anyone yet.
+                </div>
+              ) : (
+                state.referredUsers.map(ref => (
+                  <motion.div 
+                    whileHover={{ x: 5 }}
+                    key={ref.id} 
+                    className="bg-white border border-slate-200 p-4 rounded-[20px] flex justify-between items-center shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 font-bold">
+                        {ref.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900">{ref.username}</div>
+                        <div className="text-xs text-slate-500">{ref.date}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-slate-900">{ref.username}</div>
-                      <div className="text-xs text-slate-500">{ref.date}</div>
+                    <div className="font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
+                      +{ref.reward} DRP
                     </div>
-                  </div>
-                  <div className="font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
-                    +{ref.reward} DRP
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </div>
