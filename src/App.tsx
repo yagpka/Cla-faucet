@@ -42,6 +42,7 @@ const cubeVariants = {
 function AppContent() {
   const [activeTab, setActiveTab] = useState('home');
   const [direction, setDirection] = useState(0);
+  const [showPopup, setShowPopup] = useState(true);
 
   const handleTabChange = (newTabId: string) => {
     sounds.playClick();
@@ -53,6 +54,13 @@ function AppContent() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 text-slate-900 font-sans overflow-hidden max-w-md mx-auto relative shadow-2xl perspective-1000">
+      {/* Announcement Strip */}
+      <div className="bg-indigo-600 text-white text-xs font-bold py-1.5 overflow-hidden whitespace-nowrap relative z-50 shadow-md">
+        <div className="animate-marquee inline-block">
+          🚀 SOL withdrawals are now open! 🚀 Keep mining and complete tasks to withdraw! 🚀 SOL withdrawals are now open! 🚀 Keep mining and complete tasks to withdraw! 🚀
+        </div>
+      </div>
+
       {/* Ambient Glows */}
       <div className="absolute top-0 left-0 w-full h-96 bg-indigo-500/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none" />
@@ -97,6 +105,38 @@ function AppContent() {
           })}
         </div>
       </nav>
+
+      {/* Welcome Popup */}
+      <AnimatePresence>
+        {showPopup && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
+              <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <span className="text-4xl">🎉</span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Withdrawals are Opened!</h2>
+              <p className="text-slate-500 mb-8">
+                You can now withdraw your mined crypto to your wallet. <strong className="text-indigo-600">Only SOL withdrawals are currently opened.</strong> Keep completing tasks and mining!
+              </p>
+              <button 
+                onClick={() => {
+                  sounds.playClick();
+                  setShowPopup(false);
+                }}
+                className="w-full bg-indigo-600 text-white font-bold py-4 rounded-full shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-colors"
+              >
+                Awesome!
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

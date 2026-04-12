@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../lib/store';
 import { sounds } from '../lib/sounds';
+import { AdBanner } from '../components/AdBanner';
 import { MessageCircle, Twitter, Youtube, Check, Users, Copy, Gift } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -105,7 +106,7 @@ export const Tasks = () => {
         <p className="text-slate-500 text-sm mb-6">Complete tasks or invite friends to earn DRP.</p>
 
         {/* Tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-full mb-2">
+        <div className="flex bg-slate-100 p-1 rounded-full mb-6">
           <button
             onClick={() => setActiveTab('tasks')}
             className={`flex-1 py-3 rounded-full font-bold text-sm transition-all ${
@@ -124,6 +125,8 @@ export const Tasks = () => {
           </button>
         </div>
       </div>
+
+      <AdBanner />
 
       {activeTab === 'tasks' ? (
         <div className="space-y-2">

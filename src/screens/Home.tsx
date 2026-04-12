@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../lib/store';
 import { sounds } from '../lib/sounds';
+import { AdBanner } from '../components/AdBanner';
 import { Flame, Coins, PlaySquare, Zap, Pickaxe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -218,7 +219,9 @@ export const Home = () => {
         </motion.button>
       )}
 
-      <div className="grid grid-cols-2 gap-4 w-full relative z-20">
+      <AdBanner />
+
+      <div className="grid grid-cols-2 gap-4 w-full relative z-20 mt-4">
         <div className="bg-white/80 backdrop-blur-md p-5 rounded-[24px] border border-slate-200 flex flex-col shadow-lg">
           <div className="text-slate-500 text-sm mb-2">Mine Clicks Today</div>
           <div className="text-3xl font-bold text-slate-900">{state.mineClicksToday}</div>

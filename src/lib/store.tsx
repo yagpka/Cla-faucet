@@ -305,6 +305,28 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     loadState();
   }, []);
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const interval = setInterval(() => {
+      const today = getUTCDateString();
+      setState(prev => {
+        if (prev.lastResetDate !== today) {
+          return {
+            ...prev,
+            mineClicksToday: 0,
+            faucetClaimsToday: 0,
+            watchAdsProgress: Array(10).fill(0),
+            lastResetDate: today,
+          };
+        }
+        return prev;
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [isLoaded]);
+
   // Sync state to Supabase (debounced)
   useEffect(() => {
     if (!isLoaded) return;

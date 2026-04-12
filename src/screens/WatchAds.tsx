@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGame } from '../lib/store';
 import { sounds } from '../lib/sounds';
+import { AdBanner } from '../components/AdBanner';
 import { PlaySquare, Coins, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -67,7 +68,9 @@ export const WatchAds = () => {
         </motion.div>
       </div>
 
-      <div className="space-y-4">
+      <AdBanner />
+
+      <div className="space-y-4 mt-6">
         {AD_TYPES.map((ad, index) => {
           const progress = state.watchAdsProgress[index];
           const isMaxed = progress >= ad.max;

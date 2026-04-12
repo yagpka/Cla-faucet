@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../lib/store';
 import { sounds } from '../lib/sounds';
+import { AdBanner } from '../components/AdBanner';
 import { Droplets, Flame, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -48,20 +49,68 @@ export const Faucet = () => {
       <div className="w-full bg-white border border-slate-200 rounded-[32px] p-6 flex flex-col items-center text-center relative overflow-hidden mb-6 shadow-xl preserve-3d">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
         
-        {/* 3D Animated Droplet with Orbiting Rings */}
-        <div className="relative w-24 h-24 flex items-center justify-center mb-4 preserve-3d">
-          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 animate-spin-3d preserve-3d" style={{ animationDuration: '8s' }}></div>
-          <div className="absolute inset-2 rounded-full border border-purple-500/30 animate-spin-3d preserve-3d" style={{ animationDuration: '5s', animationDirection: 'reverse' }}></div>
-          
+        {/* 3D Animated Droplet with Orbiting Rings and Particles */}
+        <div className="relative w-32 h-32 flex items-center justify-center mb-6 preserve-3d">
+          {/* Ambient Glow */}
           <motion.div 
-            animate={{ y: [-8, 8, -8], rotateY: [0, 360] }} 
+            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 bg-indigo-400/20 rounded-full blur-xl"
+          />
+
+          {/* Orbiting Rings */}
+          <motion.div 
+            animate={{ rotateX: 360, rotateY: 180, rotateZ: 360 }}
+            transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 rounded-full border-[3px] border-indigo-500/30 border-t-indigo-400 preserve-3d" 
+          />
+          <motion.div 
+            animate={{ rotateX: -360, rotateY: 360, rotateZ: -180 }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-2 rounded-full border-2 border-purple-500/20 border-b-purple-400 preserve-3d" 
+          />
+          <motion.div 
+            animate={{ rotateX: 180, rotateY: -360, rotateZ: 360 }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-4 rounded-full border border-blue-400/20 border-l-blue-400 preserve-3d" 
+          />
+          
+          {/* Floating Particles */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              animate={{ 
+                y: [0, -50], 
+                x: [0, (i % 2 === 0 ? 1 : -1) * (Math.random() * 25)],
+                opacity: [0, 1, 0],
+                scale: [0, 1.5, 0]
+              }}
+              transition={{ 
+                duration: 2 + Math.random() * 2, 
+                repeat: Infinity, 
+                delay: i * 0.4,
+                ease: "easeOut" 
+              }}
+              className="absolute w-2 h-2 bg-indigo-400 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+              style={{ 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)' 
+              }}
+            />
+          ))}
+
+          {/* Core Droplet */}
+          <motion.div 
+            animate={{ y: [-8, 8, -8], rotateY: [0, 360], scale: [1, 1.05, 1] }} 
             transition={{ 
               y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-              rotateY: { duration: 10, repeat: Infinity, ease: "linear" }
+              rotateY: { duration: 8, repeat: Infinity, ease: "linear" },
+              scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
             }}
-            className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100 shadow-[0_10px_20px_rgba(99,102,241,0.2)] relative z-10 preserve-3d"
+            className="w-16 h-16 bg-gradient-to-br from-white to-slate-100 rounded-full flex items-center justify-center border border-white shadow-[0_10px_25px_rgba(99,102,241,0.4)] relative z-10 preserve-3d"
           >
-            <Droplets size={32} className="text-indigo-500" style={{ transform: 'translateZ(20px)' }} />
+            <Droplets size={32} className="text-indigo-600 drop-shadow-md" style={{ transform: 'translateZ(25px)' }} />
           </motion.div>
         </div>
 
@@ -92,7 +141,7 @@ export const Faucet = () => {
         </div>
       </div>
 
-      <div className="w-full grid grid-cols-2 gap-4">
+      <div className="w-full grid grid-cols-2 gap-4 mt-4">
         <motion.div whileHover={{ y: -5 }} className="bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm transition-all hover:shadow-md">
           <div className="text-slate-500 text-sm mb-1">Claims Today</div>
           <div className="text-2xl font-bold text-slate-900">{state.faucetClaimsToday} <span className="text-sm text-slate-400">/ 96</span></div>
