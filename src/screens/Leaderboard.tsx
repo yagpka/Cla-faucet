@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useGame } from '../lib/store';
+import { useGame, checkIsActivePlayer } from '../lib/store';
 import { Trophy, Medal, Globe, ArrowDownToLine, Coins } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -99,8 +99,13 @@ export const Leaderboard = () => {
                 </div>
                 
                 <div className="ml-4 flex-1" style={{ transform: 'translateZ(5px)' }}>
-                  <div className={`font-bold text-lg ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>
+                  <div className={`font-bold text-lg flex items-center gap-2 ${isMe ? 'text-indigo-600' : 'text-slate-900'}`}>
                     {user.username || 'Anonymous'}
+                    {/* Active Status Dot */}
+                    <div 
+                      className={`w-2.5 h-2.5 rounded-full ${isMe ? (checkIsActivePlayer(state) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500') : (user.is_active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500')}`} 
+                      title={isMe ? (checkIsActivePlayer(state) ? 'Active Player' : 'Inactive Player') : (user.is_active ? 'Active Player' : 'Inactive Player')} 
+                    />
                   </div>
                   {prize && (
                     <div className="text-xs text-yellow-600 font-medium mt-0.5">Prize: {prize}</div>

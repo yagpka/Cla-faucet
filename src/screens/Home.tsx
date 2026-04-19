@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from '../lib/store';
+import { useGame, checkIsActivePlayer } from '../lib/store';
 import { sounds } from '../lib/sounds';
 import { AdBanner } from '../components/AdBanner';
 import { Flame, Coins, PlaySquare, Zap, Pickaxe } from 'lucide-react';
@@ -75,9 +75,18 @@ export const Home = () => {
   return (
     <div className="flex flex-col h-full p-6 relative overflow-y-auto pb-32 perspective-1000">
       
-      <div className="mt-4 mb-6 relative z-20 text-center">
+      <div className="mt-4 mb-6 relative z-20 text-center flex flex-col items-center">
+        {state.tgUser?.username && (
+          <div className="flex items-center gap-2 mb-2 bg-white/50 px-3 py-1 rounded-full border border-slate-200 backdrop-blur-sm">
+            <span className="text-sm font-bold text-slate-700">@{state.tgUser.username}</span>
+            <div 
+              className={`w-2 h-2 rounded-full ${checkIsActivePlayer(state) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'}`} 
+              title={checkIsActivePlayer(state) ? 'Active Player' : 'Inactive Player'} 
+            />
+          </div>
+        )}
         <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          Cla_faucet
+          CoinDrop
         </h1>
         <p className="text-slate-500 text-sm">Select a coin, get taps, and start mining! 🐰✨</p>
       </div>

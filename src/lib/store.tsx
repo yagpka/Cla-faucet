@@ -37,9 +37,10 @@ export interface GameState {
   lastResetDate: string;
   nextWeeklyReset: number;
   tgUser: { id: number; username?: string; first_name?: string } | null;
-  leaderboard: { telegram_id: number; username: string; balance_drp: number }[];
+  leaderboard: { telegram_id: number; username: string; balance_drp: number; is_active?: boolean }[];
   globalMetrics: { total_drp: number; total_withdrawals_usd: number };
   referredUsers: { id: string; username: string; reward: number; date: string }[];
+  totalUsers: number;
 }
 
 const initialState: GameState = {
@@ -67,6 +68,21 @@ const initialState: GameState = {
   leaderboard: [],
   globalMetrics: { total_drp: 0, total_withdrawals_usd: 0 },
   referredUsers: [],
+  totalUsers: 0,
+};
+
+export const checkIsActivePlayer = (state: GameState) => {
+  const adsWatched = state.watchAdsProgress.reduce((a, b) => a + b, 0);
+  const premiumAds = state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7];
+  
+  const conditions = [
+    adsWatched >= 10,
+    state.faucetClaimsToday >= 10,
+    state.mineClicksToday >= 1000,
+    premiumAds >= 10
+  ];
+  
+  return conditions.filter(Boolean).length >= 2;
 };
 
 interface GameContextType {
@@ -250,13 +266,30 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Fetch Leaderboard
+      const today = getUTCDateString();
       try {
         const { data: lbData } = await supabase
           .from('users')
           .select('telegram_id, username, balance_drp')
           .order('balance_drp', { ascending: false })
           .limit(50);
-        if (lbData) parsed.leaderboard = lbData;
+          
+        if (lbData) {
+          const userIds = lbData.map(u => u.telegram_id);
+          const { data: activeData } = await supabase
+            .from('user_tasks')
+            .select('user_id')
+            .eq('task_id', 'active_status_date')
+            .eq('status', today)
+            .in('user_id', userIds);
+            
+          const activeUserIds = new Set(activeData?.map(a => a.user_id) || []);
+          
+          parsed.leaderboard = lbData.map(u => ({
+            ...u,
+            is_active: activeUserIds.has(u.telegram_id)
+          }));
+        }
       } catch (e) {
         console.error("Failed to fetch leaderboard", e);
       }
@@ -272,7 +305,16 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to fetch global metrics", e);
       }
 
-      const today = getUTCDateString();
+      // Fetch Total Users
+      try {
+        const { count } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        if (count !== null) parsed.totalUsers = count;
+      } catch (e) {
+        console.error("Failed to fetch total users", e);
+      }
+
       const now = Date.now();
 
       if (parsed.lastResetDate !== today) {
@@ -349,6 +391,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
             faucet_streak: state.faucetStreak,
             last_faucet_claim: state.lastFaucetClaimDate ? new Date(state.lastFaucetClaimDate).toISOString() : null,
           });
+
+          if (checkIsActivePlayer(state)) {
+            await supabase.from('user_tasks').upsert({
+              user_id: state.tgUser!.id,
+              task_id: 'active_status_date',
+              status: getUTCDateString()
+            });
+          }
         } catch (e) {
           console.error('Failed to sync to Supabase', e);
         }

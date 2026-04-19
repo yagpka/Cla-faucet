@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGame } from '../lib/store';
+import { useGame, checkIsActivePlayer } from '../lib/store';
 import { sounds } from '../lib/sounds';
 import { Wallet as WalletIcon, ArrowRightLeft, History, Send, CheckCircle2, XCircle, Info, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -65,6 +65,10 @@ export const Wallet = () => {
     }
   };
 
+  const isActive = checkIsActivePlayer(state);
+  const adsWatched = state.watchAdsProgress.reduce((a, b) => a + b, 0);
+  const premiumAds = state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7];
+
   const handleCoinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     sounds.playClick();
     const newCoin = e.target.value;
@@ -77,21 +81,8 @@ export const Wallet = () => {
     setWithdrawError('');
     sounds.playClick();
 
-    const quickAds = state.watchAdsProgress[0] + state.watchAdsProgress[1];
-    const stdAds = state.watchAdsProgress[2] + state.watchAdsProgress[3] + state.watchAdsProgress[4];
-    const premAds = state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7];
-    const vidAds = state.watchAdsProgress[8] + state.watchAdsProgress[9];
-
-    if (state.referrals.length < 10) {
-      setWithdrawError('You need at least 10 referrals to withdraw.');
-      return;
-    }
-    if (state.faucetClaimsToday < 20) {
-      setWithdrawError('You need at least 20 faucet claims today to withdraw.');
-      return;
-    }
-    if (quickAds < 10 || stdAds < 10 || premAds < 10 || vidAds < 10) {
-      setWithdrawError('You must complete at least 10 of each ad type (Quick, Standard, Premium, Video) today.');
+    if (!isActive) {
+      setWithdrawError('You must be an Active Player to withdraw. Check your Active Status.');
       return;
     }
 
@@ -157,7 +148,6 @@ export const Wallet = () => {
         </div>
       </motion.div>
 
-      {/* Requirements Button */}
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -165,15 +155,17 @@ export const Wallet = () => {
           sounds.playClick();
           setShowReqs(true);
         }}
-        className="w-full bg-white border border-indigo-200 text-indigo-600 rounded-[24px] p-4 mb-8 shadow-sm flex items-center justify-between font-bold transition-all hover:shadow-md"
+        className={`w-full border rounded-[24px] p-4 mb-8 shadow-sm flex items-center justify-between font-bold transition-all hover:shadow-md ${isActive ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-indigo-200 text-indigo-600'}`}
       >
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-50 p-2 rounded-full">
-            <CheckCircle2 size={24} className="text-indigo-500" />
+          <div className={isActive ? 'bg-green-100 p-2 rounded-full' : 'bg-indigo-50 p-2 rounded-full'}>
+            <CheckCircle2 size={24} className={isActive ? 'text-green-600' : 'text-indigo-500'} />
           </div>
-          <span>Withdrawal Requirements</span>
+          <span>Active Player Status</span>
         </div>
-        <div className="text-sm bg-indigo-100 px-3 py-1 rounded-full">View Status</div>
+        <div className={`text-sm px-3 py-1 rounded-full ${isActive ? 'bg-green-200 text-green-800' : 'bg-indigo-100'}`}>
+          {isActive ? 'Active' : 'View Status'}
+        </div>
       </motion.button>
 
       {/* Convert DRP to Crypto */}
@@ -353,72 +345,51 @@ export const Wallet = () => {
               className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Withdrawal Requirements</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2 text-center">Active Player Status</h2>
+              <p className="text-sm text-slate-500 text-center mb-6">Complete any 2 of the daily requirements below to become an Active Player and unlock withdrawals.</p>
               
               <div className="space-y-3 mb-8">
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${state.referrals.length >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {state.referrals.length >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
+                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${adsWatched >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                  {adsWatched >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
                   <div className="flex-1">
                     <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span>10 Referrals</span>
-                      <span className="text-xs font-bold px-2 py-1 bg-slate-200 text-slate-600 rounded-md">Lifetime</span>
-                    </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.referrals.length}/10</div>
-                  </div>
-                </div>
-                
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${state.faucetClaimsToday >= 20 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {state.faucetClaimsToday >= 20 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
-                  <div className="flex-1">
-                    <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span>20 Faucet Claims</span>
+                      <span>Watch 10 Ads (Any)</span>
                       <span className="text-xs font-bold px-2 py-1 bg-indigo-100 text-indigo-600 rounded-md flex items-center gap-1"><Clock size={12} /> Today</span>
                     </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.faucetClaimsToday}/20</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Currently: {adsWatched}/10</div>
                   </div>
                 </div>
 
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${(state.watchAdsProgress[0] + state.watchAdsProgress[1]) >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {(state.watchAdsProgress[0] + state.watchAdsProgress[1]) >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
+                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${state.faucetClaimsToday >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                  {state.faucetClaimsToday >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
                   <div className="flex-1">
                     <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span>10 Quick Ads</span>
+                      <span>10 Faucet Claims</span>
                       <span className="text-xs font-bold px-2 py-1 bg-indigo-100 text-indigo-600 rounded-md flex items-center gap-1"><Clock size={12} /> Today</span>
                     </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.watchAdsProgress[0] + state.watchAdsProgress[1]}/10</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.faucetClaimsToday}/10</div>
                   </div>
                 </div>
 
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${(state.watchAdsProgress[2] + state.watchAdsProgress[3] + state.watchAdsProgress[4]) >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {(state.watchAdsProgress[2] + state.watchAdsProgress[3] + state.watchAdsProgress[4]) >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
+                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${state.mineClicksToday >= 1000 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                  {state.mineClicksToday >= 1000 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
                   <div className="flex-1">
                     <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span>10 Standard Ads</span>
+                      <span>1,000 Taps</span>
                       <span className="text-xs font-bold px-2 py-1 bg-indigo-100 text-indigo-600 rounded-md flex items-center gap-1"><Clock size={12} /> Today</span>
                     </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.watchAdsProgress[2] + state.watchAdsProgress[3] + state.watchAdsProgress[4]}/10</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.mineClicksToday}/1000</div>
                   </div>
                 </div>
 
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${(state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7]) >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {(state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7]) >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
+                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${premiumAds >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                  {premiumAds >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
                   <div className="flex-1">
                     <div className="font-bold text-slate-900 flex items-center justify-between">
                       <span>10 Premium Ads</span>
                       <span className="text-xs font-bold px-2 py-1 bg-indigo-100 text-indigo-600 rounded-md flex items-center gap-1"><Clock size={12} /> Today</span>
                     </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.watchAdsProgress[5] + state.watchAdsProgress[6] + state.watchAdsProgress[7]}/10</div>
-                  </div>
-                </div>
-
-                <div className={`flex items-center gap-4 p-3 rounded-2xl border ${(state.watchAdsProgress[8] + state.watchAdsProgress[9]) >= 10 ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
-                  {(state.watchAdsProgress[8] + state.watchAdsProgress[9]) >= 10 ? <CheckCircle2 className="text-green-500 shrink-0" size={28} /> : <XCircle className="text-red-400 shrink-0" size={28} />}
-                  <div className="flex-1">
-                    <div className="font-bold text-slate-900 flex items-center justify-between">
-                      <span>10 Video Ads</span>
-                      <span className="text-xs font-bold px-2 py-1 bg-indigo-100 text-indigo-600 rounded-md flex items-center gap-1"><Clock size={12} /> Today</span>
-                    </div>
-                    <div className="text-sm text-slate-500 mt-0.5">Currently: {state.watchAdsProgress[8] + state.watchAdsProgress[9]}/10</div>
+                    <div className="text-sm text-slate-500 mt-0.5">Currently: {premiumAds}/10</div>
                   </div>
                 </div>
               </div>

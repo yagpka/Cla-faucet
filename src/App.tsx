@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GameProvider } from './lib/store';
+import { GameProvider, useGame } from './lib/store';
 import { sounds } from './lib/sounds';
 import { Home } from './screens/Home';
 import { Faucet } from './screens/Faucet';
@@ -40,6 +40,7 @@ const cubeVariants = {
 };
 
 function AppContent() {
+  const { state } = useGame();
   const [activeTab, setActiveTab] = useState('home');
   const [direction, setDirection] = useState(0);
   const [showPopup, setShowPopup] = useState(true);
@@ -106,7 +107,7 @@ function AppContent() {
         </div>
       </nav>
 
-      {/* Welcome Popup */}
+      {/* Jackpot Event Popup */}
       <AnimatePresence>
         {showPopup && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
@@ -116,22 +117,33 @@ function AppContent() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl text-center relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
-              <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <span className="text-4xl">🎉</span>
+              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none"></div>
+              <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <span className="text-4xl">🎰</span>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Withdrawals are Opened!</h2>
-              <p className="text-slate-500 mb-8">
-                You can now withdraw your mined crypto to your wallet. <strong className="text-indigo-600">Only SOL withdrawals are currently opened.</strong> Keep completing tasks and mining!
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Jackpot Event Upcoming!</h2>
+              <p className="text-slate-500 mb-6">
+                A massive Jackpot event will be opened after our user base touches <strong className="text-amber-500">100 users</strong>. Invite your friends to reach the goal faster!
               </p>
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-8">
+                <div className="text-sm text-slate-500 mb-1 font-bold">Current User Base</div>
+                <div className="text-3xl font-black text-slate-900">{state.totalUsers} <span className="text-sm font-normal text-slate-400">/ 100</span></div>
+                {/* Progress bar */}
+                <div className="w-full bg-slate-200 h-2 rounded-full mt-3 overflow-hidden">
+                  <div 
+                    className="bg-amber-500 h-full rounded-full transition-all duration-1000" 
+                    style={{ width: `${Math.min(100, (state.totalUsers / 100) * 100)}%` }}
+                  ></div>
+                </div>
+              </div>
               <button 
                 onClick={() => {
                   sounds.playClick();
                   setShowPopup(false);
                 }}
-                className="w-full bg-indigo-600 text-white font-bold py-4 rounded-full shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-colors"
+                className="w-full bg-amber-500 text-white font-bold py-4 rounded-full shadow-[0_10px_20px_rgba(245,158,11,0.3)] hover:bg-amber-600 transition-colors"
               >
-                Awesome!
+                Let's Go!
               </button>
             </motion.div>
           </div>
